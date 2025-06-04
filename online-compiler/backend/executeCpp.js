@@ -14,7 +14,7 @@ if(!fs.existsSync(outputPath)){
 
 const executeCpp = (filePath) =>{
     const jobId = path.basename(filePath).split(".")[0]; //"2f79b636-ee6a-4a6d-b396-947a211d8d7e"
-    const output_filename = `${jobId}.out`; //"2f79b636-ee6a-4a6d-b396-947a211d8
+    const output_filename  = `${jobId}.out`; //"2f79b636-ee6a-4a6d-b396-947a211d8
     const outPath = path.join(outputPath, output_filename); ///Users/raghavbagdi/Documents/online-compiler/backend/outputs/2f79b636-ee6a-4a6d-b396-947a211d8d7e.out
     return new Promise((resolve, reject) => {
 
