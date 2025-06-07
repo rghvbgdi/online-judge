@@ -1,2 +1,7 @@
+# .gitignore
 node_modules/
-node_modules/
+.env
+dist/
+build/
+.vscode/
+.DS_Store
