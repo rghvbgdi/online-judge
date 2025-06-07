@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
-
+const generateInputFile = require('./generateInputFile.js');
 const outputPath = path.join(__dirname, 'outputs');///Users/raghavbagdi/Documents/online-compiler/backend/codes
 
 if(!fs.existsSync(outputPath)){
@@ -12,13 +12,13 @@ if(!fs.existsSync(outputPath)){
 
 
 
-const executeCpp = (filePath) =>{
+const executeCpp = (filePath, generateInputFile) =>{
     const jobId = path.basename(filePath).split(".")[0]; //"2f79b636-ee6a-4a6d-b396-947a211d8d7e"
     const output_filename  = `${jobId}.out`; //"2f79b636-ee6a-4a6d-b396-947a211d8
     const outPath = path.join(outputPath, output_filename); ///Users/raghavbagdi/Documents/online-compiler/backend/outputs/2f79b636-ee6a-4a6d-b396-947a211d8d7e.out
     return new Promise((resolve, reject) => {
 
-        exec(`g++ ${filePath} -o ${outPath} && cd ${outputPath} && ./${output_filename}`, (error, stdout, stderr) => {
+    exec(`g++ ${filePath} -o ${outPath} && cd ${outputPath} && ./${output_filename} < ${generateInputFile}`, (error, stdout, stderr) => {
             if (error) {
                 reject({error,stderr});
             } 

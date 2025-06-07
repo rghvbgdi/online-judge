@@ -1,14 +1,20 @@
 const express = require('express');
 const generateFile = require('./generateFile.js');
 const executeCpp = require('./executecpp.js');
-const app = express();
+const generateInputFile = require('./generateInputFile.js');
+
+
+
 const cors = require('cors');
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-
-
+const app = express();
 app.use(cors());
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));  
+
+
+
+
 app.listen(8000, () => {
     console.log('Server started on port 8000');
 });
@@ -17,7 +23,7 @@ app.listen(8000, () => {
 //consider the online compiler API endpoints here.
 app.post('/run', async (req, res) => {
     // Destructure language and code from request body, default language to 'cpp'
-    const { language = 'cpp', code } = req.body;
+    const { language = 'cpp', code, input } = req.body;
 
     // If code is not provided, return a 400 Bad Request error
     if (!code) {
@@ -25,10 +31,10 @@ app.post('/run', async (req, res) => {
     }
     try {
         // Generate the file containing the code
-        const filePath = generateFile(language, code);
-
+        const filePath =  generateFile(language, code);
+        const inputFilePath =  generateInputFile(input);
         // Compile and execute the C++ code, await the output
-        const output = await executeCpp(filePath);
+        const output = await executeCpp(filePath, inputFilePath);
 
         // Respond with the output and file path
         res.json({ filePath, output });
