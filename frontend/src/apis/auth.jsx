@@ -16,5 +16,23 @@ export const register = async (firstname, lastname, email, password) => {
 };
 
 export const fetchAllProblems = async () => {
-    return await API.get('/problems');
+    return await API.get(`/problems`);
   };
+
+export const createProblem = async (formData, token) => {
+    return await API.post('/admin/problems', formData, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+};
+
+export const deleteProblem = async (problemNumber, token) => {
+    return await API.delete(`/admin/problems/${problemNumber}`, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+};
+
+export const checkAdminStatus = async (token) => {
+    return await API.get('/admin/problems', {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+};

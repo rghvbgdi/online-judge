@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import { Link } from "react-router-dom";
 import { fetchAllProblems } from "./apis/auth";
 const Home = () => {
@@ -25,40 +24,55 @@ const Home = () => {
   if (loading) return <p className="p-6 text-center">Loading problems...</p>;
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <h1 className="text-4xl font-bold mb-8 text-center">All Problems</h1>
-      <table className="w-full table-auto border-collapse border border-gray-300">
-        <thead>
-          <tr className="bg-gray-100">
-            <th className="p-3 border border-gray-300 text-left">#</th>
-            <th className="p-3 border border-gray-300 text-left">Title</th>
-            <th className="p-3 border border-gray-300 text-left">Difficulty</th>
-          </tr>
-        </thead>
-        <tbody>
-          {problems.map(({ problemNumber, title, difficulty }) => (
-            <tr key={problemNumber} className="hover:bg-gray-50">
-              <td className="p-3 border border-gray-300">{problemNumber}</td>
-              <td className="p-3 border border-gray-300">
-                <Link to={`/home/${problemNumber}`} className="text-blue-600 hover:underline">
-                  {title}
-                </Link>
-              </td>
-              <td
-                className={`p-3 border border-gray-300 font-semibold ${
-                  difficulty === "Easy"
-                    ? "text-green-600"
-                    : difficulty === "Medium"
-                    ? "text-yellow-600"
-                    : "text-red-600"
-                }`}
-              >
-                {difficulty}
-              </td>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-sky-100 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-5xl mx-auto">
+        <h1 className="text-4xl sm:text-5xl font-bold mb-10 text-center text-slate-700">All Problems</h1>
+        <div className="bg-white shadow-xl rounded-lg overflow-hidden">
+          <table className="w-full table-auto">
+          <thead>
+            <tr className="bg-slate-200 text-slate-600 uppercase text-sm leading-normal">
+              <th className="py-3 px-6 text-left">Title</th>
+              <th className="py-3 px-6 text-left">Difficulty</th>
+              <th className="py-3 px-6 text-left">Tags</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="text-slate-700 text-sm font-light">
+            {problems.map(({ problemNumber, title, difficulty, tags }) => (
+              <tr key={problemNumber} className="border-b border-slate-200 hover:bg-sky-100 hover:shadow-md hover:scale-[1.005] transform transition-all duration-200 ease-in-out group">
+                <td className="py-4 px-6">
+                  <Link to={`/home/${problemNumber}`} className="text-blue-600 group-hover:text-blue-700 hover:underline font-medium">
+                    {title}
+                  </Link>
+                </td>
+                <td
+                  className={`py-4 px-6 font-semibold ${
+                    difficulty === "Easy"
+                      ? "text-green-600"
+                      : difficulty === "Medium" 
+                      ? "text-yellow-500" // Adjusted yellow for better contrast on hover
+                      : "text-red-600"
+                  }`}
+                >
+                  {difficulty}
+                </td>
+                <td className="py-4 px-6">
+                  <div className="flex flex-wrap gap-1">
+                    {tags?.map((tag, index) => (
+                      <span
+                        key={index}
+                        className="px-2.5 py-1 text-xs bg-sky-100 text-sky-700 rounded-full font-medium group-hover:bg-sky-200 transition-colors duration-150"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        </div>
+      </div>
     </div>
   );
 };

@@ -17,6 +17,7 @@ const handleLogin = async () => {
 
 
     const token = response.data.user.token;
+   
     localStorage.setItem("token", token);
     setError("");
     setSuccess("Logged in successfully!");

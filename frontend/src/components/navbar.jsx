@@ -1,9 +1,26 @@
-import React from "react";
-import { Link ,useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { checkAdminStatus } from "../apis/auth";
 
 const Navbar = () => {
     const isLoggedIn = Boolean(localStorage.getItem("token"));
     const navigate = useNavigate();
+    const [isAdmin, setIsAdmin] = useState(false);
+
+    useEffect(() => {
+      const checkAdmin = async () => {
+        try {
+          const token = localStorage.getItem("token");
+          await checkAdminStatus(token);
+          setIsAdmin(true);
+        } catch {
+          setIsAdmin(false);
+        }
+      };
+
+      if (isLoggedIn) checkAdmin();
+    }, [isLoggedIn]);
+
     const handleLogout = () => {
         localStorage.removeItem("token");
         navigate("/login");
@@ -21,12 +38,22 @@ return (
         <Link to="/submissions" className="hover:-translate-y-1 transition-transform duration-200 hover:bg-white/20 rounded-md px-2 py-1">Submissions</Link>
         <Link to="/leaderboard" className="hover:-translate-y-1 transition-transform duration-200 hover:bg-white/20 rounded-md px-2 py-1">Leaderboard</Link>
         <Link to="/discuss" className="hover:-translate-y-1 transition-transform duration-200 hover:bg-white/20 rounded-md px-2 py-1">Discuss</Link>
+        {isAdmin && (
+          <Link to="/admin/problems" className="hover:-translate-y-1 transition-transform duration-200 hover:bg-white/20 rounded-md px-2 py-1">
+            Manage Problems
+          </Link>
+        )}
       </div>
       <div className="flex gap-4 items-center ml-auto">
         {!isLoggedIn && (
-          <Link to="/login" className="hover:-translate-y-1 transition-transform duration-200 hover:bg-white/20 rounded-md px-2 py-1">
-            Login
-          </Link> //if already logged in then i wont show the login button
+          <>
+            <Link to="/register" className="hover:-translate-y-1 transition-transform duration-200 hover:bg-white/20 rounded-md px-2 py-1">
+              Register
+            </Link>
+            <Link to="/login" className="hover:-translate-y-1 transition-transform duration-200 hover:bg-white/20 rounded-md px-2 py-1">
+              Login
+            </Link>
+          </>
         )}
         {isLoggedIn && (
           <>
@@ -36,7 +63,7 @@ return (
             <button onClick={handleLogout} className="hover:-translate-y-1 transition-transform duration-200 hover:bg-white/20 rounded-md px-2 py-1">
               Logout
             </button>
-          </> // if not logged in then i will not show the profile and logout button
+          </>
         )}
       </div>
     </nav>

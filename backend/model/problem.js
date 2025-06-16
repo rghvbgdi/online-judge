@@ -17,10 +17,21 @@ const problemSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    difficulty: {
+    input: {
       type: String,
-      enum: ["Easy", "Medium", "Hard"],
       required: true,
+    },
+    output: {
+      type: String,
+      required: true,
+    },
+    difficulty: {
+      type: Number,
+      required: true,
+    },
+    tags: {
+      type: [String],
+      default: [],
     },
   },
   { timestamps: true }

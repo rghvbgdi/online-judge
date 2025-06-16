@@ -1,6 +1,6 @@
 const express = require('express');
 const generateFile = require('./generateFile.js');
-const executeCpp = require('./executecpp.js');
+const executeCpp = require('./executeCpp.js');
 const generateInputFile = require('./generateInputFile.js');
 
 
@@ -15,9 +15,6 @@ app.use(express.urlencoded({ extended: true }));
 
 
 
-app.listen(8000, () => {
-    console.log('Server started on port 8000');
-});
     
 
 //consider the online compiler API endpoints here.
@@ -52,3 +49,4 @@ app.post('/run', async (req, res) => {
 app.get('/', (req, res) => {
     res.send('Hello, this is the Online Compiler Server at port 8000!');
 });
+
