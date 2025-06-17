@@ -3,6 +3,10 @@ const API = axios.create({
     baseURL: 'http://localhost:3000',
 });
 
+const CompilerAPI = axios.create({
+  baseURL: 'http://localhost:8000',
+});
+
 export const login = async (email, password) => {
     return await API.post('/login', { email, password });
 };
@@ -35,4 +39,8 @@ export const checkAdminStatus = async (token) => {
     return await API.get('/admin/problems', {
         headers: { Authorization: `Bearer ${token}` },
     });
+};
+
+export const runCode = async (code, input, language = 'cpp') => {
+  return await CompilerAPI.post('/run', { code, input, language });
 };

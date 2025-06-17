@@ -243,7 +243,52 @@ app.get('/problems', async (req, res) => {
     }
   });
 
-
+  app.post('/submit', async (req, res) => {
+    const { code, language = 'cpp', problemNumber } = req.body;
+  
+    // 1. Check input
+    if (!code || !problemNumber) {
+      return res.status(400).json({ message: 'Code and problem number are required' });
+    }
+  
+    // 2. Get the problem and hidden test cases
+    const problem = await Problem.findOne({ problemNumber }).exec();
+    if (!problem) {
+      return res.status(404).json({ message: 'Problem not found' });
+    }
+  
+    const testCases = problem.hiddenTestCases || [];
+    let allPassed = true;
+    const results = [];
+  
+    // 3. Run code against each test case using the compiler backend
+    for (const test of testCases) {
+      const runResponse = await axios.post('http://localhost:8000/run', {
+        code,
+        input: test.input,
+        language
+      });
+  
+      const actualOutput = (runResponse.data.output || '').trim();
+      const expectedOutput = test.output.trim();
+      const passed = actualOutput === expectedOutput;
+  
+      results.push({
+        input: test.input,
+        expected: expectedOutput,
+        received: actualOutput,
+        passed
+      });
+  
+      if (!passed) allPassed = false;
+    }
+  
+    // 4. Send back the final verdict
+    res.status(200).json({
+      verdict: allPassed ? 'Accepted' : 'Wrong Answer',
+      results
+    });
+  });
 
 app.listen(process.env.PORT, () => { 
     console.log(`server is listening on port ${process.env.PORT}!`);

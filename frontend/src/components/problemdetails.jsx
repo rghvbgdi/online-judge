@@ -1,14 +1,19 @@
+import axios from "axios";
 import NotFound from "../notFound.jsx";
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { fetchProblemByNumber } from '../apis/auth.jsx';
-import Compiler from './compiler.jsx';
 
 const ProblemDetails = () => {
   const { problemNumber } = useParams();
   const [problem, setProblem] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const [code, setCode] = useState('');
+  const [input, setInput] = useState('');
+  const [output, setOutput] = useState('');
+  const [language, setLanguage] = useState('cpp');
 
   useEffect(() => { 
     const fetchProblem = async () => {
@@ -32,6 +37,40 @@ const ProblemDetails = () => {
 
     fetchProblem();
   }, [problemNumber]);
+
+  // Initialize code state when problem is loaded
+  useEffect(() => {
+    if (problem) {
+      setCode(`// Start coding for ${problem.title}\n\n`);
+    }
+  }, [problem]);
+
+  const handleSubmit = async () => {
+    const payload = { language, code, input };
+    try {
+      const { data } = await axios.post(import.meta.env.VITE_BACKEND_URL2, payload);
+      setOutput(data.output);
+    } catch (error) {
+      console.log(error.response);
+    }
+  };
+
+  const handleFinalSubmit = async () => {
+    const payload = {
+      code,
+      language,
+      problemNumber,
+    };
+
+    try {
+      const { data } = await axios.post('http://localhost:3000/submit', payload);
+      console.log(data);
+      setOutput(data.verdict + "\n" + JSON.stringify(data.results, null, 2));
+    } catch (error) {
+      console.error("Submit error:", error?.response?.data || error.message);
+      setOutput('Submission failed. Please check the console for details.');
+    }
+  };
 
   if (loading) return <p>Loading problem...</p>;
   if (error === "notfound") return <NotFound />;
@@ -120,9 +159,56 @@ const ProblemDetails = () => {
         </div>
 
       </div>
-      {/* Right Column: Compiler */}
+      {/* Right Column: Inline Compiler */}
       <div className="w-full md:w-5/12 lg:w-2/5 bg-white shadow-xl rounded-lg p-6 overflow-y-auto flex flex-col">
-        <Compiler initialCode={`// Start coding for ${problem.title}\n\n`} problemId={problemNumber} />
+        <h2 className="text-xl font-semibold mb-4">Code Editor</h2>
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Select Language</label>
+          <select
+            value={language}
+            onChange={(e) => setLanguage(e.target.value)}
+            className="w-full border border-gray-300 rounded-md py-1.5 px-4 focus:outline-none focus:border-indigo-500"
+          >
+            <option value="cpp">C++</option>
+            <option value="python">Python</option>
+            <option value="javascript">JavaScript</option>
+          </select>
+        </div>
+        <textarea
+          className="flex-grow w-full p-2 border border-gray-300 rounded-md font-mono text-sm resize-none mb-4"
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          rows={15}
+          spellCheck={false}
+        />
+        <h2 className="text-xl font-semibold mb-2">Input</h2>
+        <textarea
+          className="w-full p-2 border border-gray-300 rounded-md font-mono text-sm resize-none mb-4"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          rows={5}
+          spellCheck={false}
+        />
+        <div className="flex gap-4 mb-4">
+          <button
+            onClick={handleSubmit}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Run
+          </button>
+          <button
+            onClick={handleFinalSubmit}
+            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+          >
+            Submit
+          </button>
+        </div>
+        <h2 className="text-xl font-semibold mb-2">Output</h2>
+        <pre
+          className="whitespace-pre-wrap font-mono text-gray-700 bg-gray-100 p-4 rounded-md min-h-[100px] overflow-auto"
+        >
+          {output}
+        </pre>
       </div>
     </div>
   );

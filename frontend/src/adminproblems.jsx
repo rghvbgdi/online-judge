@@ -8,7 +8,9 @@ const AdminProblemManager = () => {
     input: '',
     output: '',
     difficulty: '',
-    tags: '' // Added tags to formData
+    tags: '', // Added tags to formData
+    hiddenTestCases: [],
+    hiddenTestCasesRaw: ''
   });
   const [problemNumberToDelete, setProblemNumberToDelete] = useState('');
   const [message, setMessage] = useState('');
@@ -51,10 +53,21 @@ const AdminProblemManager = () => {
   const createProblem = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await createProblemAPI(formData, token);
+      const hiddenTestCases = (formData.hiddenTestCasesRaw || '')
+        .trim()
+        .split(/\n\s*\n/)
+        .map(block => {
+          const [input, output] = block.split('\n---\n');
+          return { input: input?.trim() || '', output: output?.trim() || '' };
+        })
+        .filter(tc => tc.input && tc.output);
+      const res = await createProblemAPI(
+        { ...formData, hiddenTestCases },
+        token
+      );
       setMessage(`Problem created successfully.`);
       fetchProblems(); // Refresh the list of problems
-      setFormData({ title: '', description: '', input: '', output: '', difficulty: '', tags: '' }); // Reset form
+      setFormData({ title: '', description: '', input: '', output: '', difficulty: '', tags: '', hiddenTestCasesRaw: '' }); // Reset form
     } catch (err) {
       setMessage(err.response?.data?.message || 'Failed to create problem');
     }
@@ -109,6 +122,17 @@ const AdminProblemManager = () => {
         <div className="space-y-2">
           <label className="block font-medium">Tags (comma-separated)</label>
           <input type="text" name="tags" placeholder="e.g., Array, String, Math" className="input w-full px-3 py-2 border rounded-md" onChange={handleChange} value={formData.tags} />
+        </div>
+        <div className="space-y-2">
+          <label className="block font-medium">Hidden Test Cases (input\n---\noutput blocks)</label>
+          <textarea
+            name="hiddenTestCasesRaw"
+            placeholder="Format: input1\n---\noutput1\n\ninput2\n---\noutput2"
+            rows={8}
+            className="input w-full px-3 py-2 border rounded-md resize-y"
+            onChange={(e) => setFormData({ ...formData, hiddenTestCasesRaw: e.target.value })}
+            value={formData.hiddenTestCasesRaw || ''}
+          ></textarea>
         </div>
         <button
           className={`btn bg-green-600 text-white px-4 py-2 rounded-md w-full${!isFormValid() ? " disabled:opacity-50" : ""}`}

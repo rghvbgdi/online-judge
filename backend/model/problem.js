@@ -17,13 +17,14 @@ const problemSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    input: {
-      type: String,
-      required: true,
-    },
-    output: {
-      type: String,
-      required: true,
+    hiddenTestCases: {
+      type: [
+        {
+          input: { type: String, required: true },
+          output: { type: String, required: true },
+        },
+      ],
+      default: [],
     },
     difficulty: {
       type: Number,

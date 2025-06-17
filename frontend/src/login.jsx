@@ -32,41 +32,44 @@ const handleLogin = async () => {
 
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="w-full max-w-md p-6 bg-white border rounded-lg shadow-md">
-        <div className="text-2xl font-bold mb-6 text-center">Login</div>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-600 to-blue-500 p-4">
+      <div className="w-full max-w-md p-8 bg-white rounded-xl shadow-2xl space-y-6 border border-gray-200">
+        <div className="text-3xl font-bold mb-8 text-center text-gray-800">Welcome Back!</div>
 
-        <div className="flex flex-col gap-4">
+        <div className="space-y-4">
           <input
             type="email"
             placeholder="Email"
             value ={email}
             onChange={(e)=>setEmail(e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-shadow shadow-sm hover:shadow-md"
           />
           <input
             type="password"
             placeholder="Password"
             value = {password}
             onChange = {(e)=>setPassword(e.target.value)}
-            className="w-full p-3 border mb-2 border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-shadow shadow-sm hover:shadow-md"
           />
 
-{error && <p className="text-red-500 text-sm">{error}</p>}
-{success && <p className="text-green-500 text-sm">{success}</p>}
+          {error && <p className="text-red-600 text-sm font-medium text-center">{error}</p>}
+          {success && <p className="text-green-600 text-sm font-medium text-center">{success}</p>}
+
+          <div className="text-right">
             <button
               type="button"
-              className="text-right mb-2 text-sm text-blue-500 hover:underline"
+              className="text-sm text-purple-600 hover:text-purple-800 hover:underline"
             >
               Forgot password?
             </button>
+          </div>
 
           <button
             type="submit"
             onClick = {handleLogin}
-            className="w-full bg-blue-500 text-white p-3 rounded hover:bg-blue-600 transition"
+            className="w-full bg-gradient-to-r from-purple-500 to-blue-500 text-white font-semibold p-3 rounded-lg hover:from-purple-600 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md hover:shadow-lg"
           >
-            Submit
+            Login
           </button>
         </div>
       </div>
