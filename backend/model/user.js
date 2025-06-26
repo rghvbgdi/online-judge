@@ -23,6 +23,10 @@ required : true,
         type : String ,
         enum : ["user", "admin"],
         default : "user"
-    }
+    },
+    solvedProblems: [{ // Array to store problem numbers of solved problems
+        type: Number,
+        ref: 'Problem' // This creates a reference to the Problem model
+    }]
 })
 module.exports = mongoose.model("user",userSchema);
