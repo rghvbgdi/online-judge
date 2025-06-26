@@ -18,11 +18,9 @@ if(!fs.existsSync(dirCodes)){
 const generateFile = (language,code) => {
     const jobId = uuidv4();
     const filename = `${jobId}.${language}`;   
-    const filePath = path.join(dirCodes, filename);//telling the location of new file inside new folder
+    const filePath = `./codes/${filename}`; // Return a clean relative path
     fs.writeFileSync(filePath, code); //writing the code into the file , by using the filePath we just got and the code 
     return filePath;  //returning the path of the file
-    
-
 };
 
 module.exports= generateFile;

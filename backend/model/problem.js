@@ -1,4 +1,4 @@
-const mongoose = require ('mongoose');
+const mongoose = require('mongoose');
 
 const problemSchema = new mongoose.Schema(
   {
@@ -16,6 +16,14 @@ const problemSchema = new mongoose.Schema(
     description: {
       type: String,
       required: true,
+    },
+    input: {
+      type: String,
+      default: '',
+    },
+    output: {
+      type: String,
+      default: '',
     },
     hiddenTestCases: {
       type: [
@@ -35,7 +43,6 @@ const problemSchema = new mongoose.Schema(
       default: [],
     },
   },
-  { timestamps: true }
 );
 
-module.exports= mongoose.model('Problem', problemSchema);
+module.exports = mongoose.model("Problem", problemSchema);

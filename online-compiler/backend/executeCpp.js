@@ -17,18 +17,37 @@ const executeCpp = (filePath, generateInputFile) =>{
     const output_filename  = `${jobId}.out`; //"2f79b636-ee6a-4a6d-b396-947a211d8
     const outPath = path.join(outputPath, output_filename); ///Users/raghavbagdi/Documents/online-compiler/backend/outputs/2f79b636-ee6a-4a6d-b396-947a211d8d7e.out
     return new Promise((resolve, reject) => {
+        exec(
+            `g++ ${filePath} -o ${outPath} && cd ${outputPath} && ./${output_filename} < ${generateInputFile}`,
+            { timeout: 2000 },
+            (error, stdout, stderr) => {
+               
+                if (stderr && stderr.includes('error:')) {
+                    // Format compiler stderr output into LeetCode-style line-based errors
+                    const formatted = stderr
+                        .split('\n')
+                        .map(line => {
+                            const match = line.match(/\.\/codes\/.*?:(\d+:\d+): (.*)/);
+                            return match ? `Line ${match[1]}: ${match[2]}` : line;
+                        })
+                        .join('\n');
+                    return reject({ type: 'compile', message: formatted });
+                }
 
-    exec(`g++ ${filePath} -o ${outPath} && cd ${outputPath} && ./${output_filename} < ${generateInputFile}`, (error, stdout, stderr) => {
-            if (error) {
-                reject({error,stderr});
-            } 
-            if(stderr){
-                reject({stderr});
+                if (error) {
+                    if (error.killed) {
+                        return reject({ type: 'timeout', message: '❌ Time Limit Exceeded (Possible infinite loop)' });
+                    }
+                    return reject({ type: 'runtime', message: error.message });
+                }
+
+                if (stdout) {
+                    return resolve(stdout);
+                }
+
+                return reject({ type: 'runtime', message: 'No output produced by the program.' });
             }
-            if(stdout){
-                resolve(stdout);
-            }
-        }); 
+        );
     });
 };
 

@@ -56,6 +56,14 @@ const ProblemDetails = () => {
   };
 
   const handleFinalSubmit = async () => {
+    // Reset output and validate input
+    setOutput("Submitting...");
+    
+    if (!code.trim()) {
+      setOutput("❌ Please write some code before submitting.");
+      return;
+    }
+
     const payload = {
       code,
       language,
@@ -63,12 +71,11 @@ const ProblemDetails = () => {
     };
 
     try {
-      const { data } = await axios.post('http://localhost:3000/submit', payload);
-      console.log(data);
-      setOutput(data.verdict + "\n" + JSON.stringify(data.results, null, 2));
+      const { data } = await axios.post('http://localhost:8000/submit', payload);
+      setOutput(data.verdict || "No verdict returned.");
     } catch (error) {
       console.error("Submit error:", error?.response?.data || error.message);
-      setOutput('Submission failed. Please check the console for details.');
+      setOutput('❌ Submission failed. Please check the console for details.');
     }
   };
 
