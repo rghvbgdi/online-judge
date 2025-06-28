@@ -1,85 +1,119 @@
-import {useState} from "react";
-import { useNavigate } from "react-router-dom"; 
-import React from "react";
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { register } from "./apis/auth";
-const Register = () =>{
-    const [firstname, setFirstname] = useState("");
-    const [lastname, setLastname] = useState("");
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [error, setError] = useState("");
-    const [success, setSuccess] = useState("");
-    const navigate = useNavigate(); 
-const handleregister =  async  () =>{
 
+const Register = () => {
+  const [formData, setFormData] = useState({
+    firstname: "",
+    lastname: "",
+    email: "",
+    password: "",
+  });
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const handleChange = (e) => {
+    setFormData((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
+  };
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setLoading(true);
     try {
-        const response = await register(firstname, lastname, email, password);
+      await register(
+        formData.firstname,
+        formData.lastname,
+        formData.email,
+        formData.password
+      );
 
-        setSuccess("Registered successfully!");
-        setError("");
-        console.log(response.data);
-        navigate('/login');
+      setSuccess("Registered successfully! Redirecting to login...");
+      setError("");
+      navigate("/login");
+    } catch (error) {
+      setError(error.response?.data || "Something went wrong");
+      setSuccess("");
+      setLoading(false);
+      console.error("Registration error:", error);
     }
-    catch(error){
-        setError(error.response?.data || "Something went wrong");
-        setSuccess("");
-        console.log("we are encountering the error:", error);
-    }
-}
-return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-    <div className="w-full max-w-md p-6 bg-white border rounded-lg shadow-md">
-      <div className="text-2xl font-bold mb-6 text-center">Register</div>
+  };
+  // setLoading is now handled by the button's disabled state, no need for finally block
+  // if we want the button to re-enable on success before navigation.
 
-      <div className="flex flex-col gap-4">
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <form onSubmit={handleRegister} className="w-full max-w-md p-8 bg-white rounded-xl shadow-lg space-y-6 border border-gray-200">
+        <div className="text-center">
+          <h2 className="text-3xl font-bold text-gray-800">
+          Create an Account
+          </h2>
+        </div>
 
-      <input 
-      type ="text"
-      placeholder = "First Name"
-      value = {firstname}
-      onChange ={(e) => setFirstname(e.target.value)}
-      className="w-full p-3 border border-gray-300 rounded"
-     />
+        <div className="space-y-4">
+          <input
+            type="text"
+            name="firstname"
+            placeholder="First Name"
+            value={formData.firstname}
+            onChange={handleChange}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow shadow-sm hover:shadow-md"
+          />
 
-<input 
-      type ="text"
-      placeholder = "Last Name"
-      value = {lastname}
-      onChange ={(e) => setLastname(e.target.value)}
-      className="w-full p-3 border border-gray-300 rounded"
-      />
-      
-      <input
+          <input
+            type="text"
+            name="lastname"
+            placeholder="Last Name"
+            value={formData.lastname}
+            onChange={handleChange}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow shadow-sm hover:shadow-md"
+          />
+
+          <input
             type="email"
+            name="email"
             placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded"
+            value={formData.email}
+            onChange={handleChange}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow shadow-sm hover:shadow-md"
           />
           <input
             type="password"
+            name="password"
             placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded"
+            value={formData.password}
+            onChange={handleChange}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow shadow-sm hover:shadow-md"
           />
-      
-      {error && <p className="text-red-500 text-sm">{error}</p>}
-          {success && <p className="text-green-500 text-sm">{success}</p>}
-      
-          <button
-            type="button"
-            onClick={handleregister}
-            className="w-full bg-blue-500 text-white p-3 rounded hover:bg-blue-600 transition"
-          >
-            register
-            </button>
-      
-      </div>
-      </div>
-    </div>
-);
-};
 
+          {error && (
+            <p className="text-red-600 text-sm font-medium text-center">{error}</p>
+          )}
+          {success && (
+            <p className="text-green-600 text-sm font-medium text-center">{success}</p>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-indigo-600 text-white font-semibold p-3 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 transition-all duration-300 ease-in-out shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? "Registering..." : "Register"}
+          </button>
+        </div>
+        <div className="text-center text-sm text-gray-600">
+          Already have an account?{" "}
+          <Link to="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
+            Sign In
+          </Link>
+        </div>
+      </form>
+    </div>
+  );
+};
 
 export default Register;

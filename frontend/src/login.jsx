@@ -1,32 +1,34 @@
 import React from "react";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { login } from "./apis/auth";
+import { useNavigate, Link } from "react-router-dom";
+import { login } from "./apis/auth"; // Already imported, no change needed here.
 
 const Login = () => {
 const [email , setEmail]= useState("");
 const [password , setPassword]= useState("");
 const [error, setError] = useState("");
 const [success, setSuccess] = useState("");
+const [isLoading, setIsLoading] = useState(false);
 const navigate = useNavigate();
 
 
 const handleLogin = async () => {
+  setIsLoading(true);
+  setError(""); // Clear previous errors
   try {
-    const response = await login( email,password);
-
-
-    const token = response.data.user.token;
-   
-    localStorage.setItem("token", token);
-    setError("");
+    await login( email,password);
+    // The token is now in an HttpOnly cookie, no need to handle it here.
     setSuccess("Logged in successfully!");
-    console.log(response.data);
-    navigate('/home');
+    // Navigate to home after a short delay to show success message
+    setTimeout(() => {
+      navigate('/home');
+    }, 1000);
     
   } catch (error) {
-    setError("Invalid credentials");
-    console.log("we are encountering the error:", error);
+    // Provide more specific feedback based on the error from the backend
+    setError(error.response?.data?.message || error.response?.data || "Login failed. Please try again.");
+  } finally {
+    setIsLoading(false);
   }
 };
 
@@ -67,9 +69,10 @@ const handleLogin = async () => {
           <button
             type="submit"
             onClick = {handleLogin}
-            className="w-full bg-gradient-to-r from-purple-500 to-blue-500 text-white font-semibold p-3 rounded-lg hover:from-purple-600 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md hover:shadow-lg"
+            className="w-full bg-gradient-to-r from-purple-500 to-blue-500 text-white font-semibold p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 transition-all duration-300 ease-in-out transform hover:scale-105 shadow-md hover:shadow-lg"
+            disabled={isLoading}
           >
-            Login
+            {isLoading ? "Logging in..." : "Login"}
           </button>
         </div>
       </div>

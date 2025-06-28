@@ -43,6 +43,54 @@ exports.createProblem = async (req, res) => {
     }
 };
 
+// Admin route to bulk create problems from a JSON array
+exports.createProblemsBulk = async (req, res) => {
+    try {
+        const problemsArray = req.body;
+
+        if (!Array.isArray(problemsArray) || problemsArray.length === 0) {
+            return res.status(400).json({ message: "Request body must be a non-empty array of problems." });
+        }
+
+        // Find the last problem to determine the starting problem number
+        const lastProblem = await Problem.findOne().sort({ problemNumber: -1 }).exec();
+        let currentProblemNumber = lastProblem ? lastProblem.problemNumber + 1 : 1;
+
+        const problemsToCreate = [];
+        for (const problem of problemsArray) {
+            let tagsArray = [];
+            if (problem.tags && Array.isArray(problem.tags)) {
+                tagsArray = problem.tags.map(tag => String(tag).trim()).filter(tag => tag.length > 0);
+            }
+
+            const newProblemDocument = new Problem({
+                ...problem,
+                problemNumber: currentProblemNumber,
+                tags: tagsArray,
+                hiddenTestCases: problem.hiddenTestCases || []
+            });
+
+            // Manually validate each document to provide a more specific error
+            try {
+                await newProblemDocument.validate();
+            } catch (validationError) {
+                // Throw a new error that includes the problem title for easy debugging
+                throw new Error(`Validation failed for problem "${problem.title || 'Untitled'}": ${validationError.message}`);
+            }
+
+            problemsToCreate.push(newProblemDocument);
+            currentProblemNumber++; // Increment for the next problem
+        }
+
+        const createdProblems = await Problem.insertMany(problemsToCreate);
+        
+        res.status(201).json({ message: `Successfully created ${createdProblems.length} problems.` });
+    } catch (error) {
+        console.error("Error creating problems in bulk:", error);
+        res.status(500).json({ message: "Failed to create problems in bulk", error: error.message });
+    }
+};
+
 // Admin route to delete a problem by its problem number
 exports.deleteProblem = async (req, res) => {
     try {

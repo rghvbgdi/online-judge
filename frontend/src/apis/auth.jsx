@@ -1,46 +1,65 @@
 import axios from "axios";
 const API = axios.create({
     baseURL: 'http://localhost:3000',
+    withCredentials: true // IMPORTANT: This tells axios to send cookies
 });
-
+// The compiler service is still at 8000
 const CompilerAPI = axios.create({
   baseURL: 'http://localhost:8000',
+  withCredentials: true // IMPORTANT: This tells axios to send cookies
 });
 
-export const login = async (email, password) => {
-    return await API.post('/login', { email, password });
+export const login = (email, password) => {
+    return API.post('/api/auth/login', { email, password });
 };
 
-export const fetchProblemByNumber = async (problemNumber) => {
-    return await API.get(`/problems/${problemNumber}`);
+export const fetchProblemByNumber = (problemNumber) => {
+    return API.get(`/api/problems/${problemNumber}`);
   };
 
-export const register = async (firstname, lastname, email, password) => {
-    return await API.post('/register', { firstname, lastname, email, password });
+export const register = (firstname, lastname, email, password) => {
+    return API.post('/api/auth/register', { firstname, lastname, email, password });
 };
 
-export const fetchAllProblems = async () => {
-    return await API.get(`/problems`);
+export const fetchAllProblems = () => {
+    return API.get(`/api/problems`);
   };
 
-export const createProblem = async (formData, token) => {
-    return await API.post('/admin/problems', formData, {
-        headers: { Authorization: `Bearer ${token}` },
-    });
+export const createProblem = (formData) => {
+    return API.post('/api/problems/admin', formData);
 };
 
-export const deleteProblem = async (problemNumber, token) => {
-    return await API.delete(`/admin/problems/${problemNumber}`, {
-        headers: { Authorization: `Bearer ${token}` },
-    });
+export const deleteProblem = (problemNumber) => {
+    return API.delete(`/api/problems/admin/${problemNumber}`);
 };
 
-export const checkAdminStatus = async (token) => {
-    return await API.get('/admin/problems', {
-        headers: { Authorization: `Bearer ${token}` },
-    });
+export const checkAdminStatus = () => {
+    return API.get('/api/problems/admin');
 };
 
-export const runCode = async (code, input, language = 'cpp') => {
-  return await CompilerAPI.post('/run', { code, input, language });
+export const runCode = (code, input, language = 'cpp') => {
+  return CompilerAPI.post('/run', { code, input, language });
+};
+
+export const submitCode = (code, language, problemNumber) => {
+  return CompilerAPI.post('/submit', { code, language, problemNumber });
+};
+
+export const logout = () => {
+    return API.post('/api/auth/logout');
+};
+
+export const fetchUserStats = () => API.get('/api/user/stats');
+
+// New lightweight endpoint for fetching only solved problem numbers
+export const fetchSolvedProblems = () => API.get('/api/user/solved');
+
+export const fetchPublicProfile = (userId) => API.get(`/api/user/profile/${userId}`);
+
+
+export const fetchLeaderboard = () => {
+  // NOTE: This assumes your backend has a GET /api/leaderboard endpoint
+  // that returns a sorted array of users.
+  // Example user object: { username: 'user1', problemsSolved: 10, score: 1500 }
+  return API.get('/api/leaderboard');
 };

@@ -36,10 +36,17 @@ exports.register = async (req, res) => {
         });
 
         const token = jwt.sign({ id: newuser._id, email, role: newuser.role }, process.env.SECRET_KEY,
-            { expiresIn: '1h' }
+            { expiresIn: '24h' } // Align with login expiration
         );
 
-        newuser.token = token;
+        // Set the token in an HttpOnly cookie, same as in login
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            maxAge: 24 * 60 * 60 * 1000 // 24 hours
+        });
+
         newuser.password = undefined;
 
         res.status(200).json({ message: 'You have successfully registered!', user: newuser });
@@ -78,6 +85,14 @@ exports.login = async (req, res) => {
             { expiresIn: "24h" }
         );
 
+    // Set the token in an HttpOnly cookie
+    res.cookie('token', token, {
+      httpOnly: true, // Not accessible via client-side JavaScript
+      secure: process.env.NODE_ENV === 'production', // Only send over HTTPS in production
+      sameSite: 'strict', // Helps mitigate CSRF attacks
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    });
+
         res.status(200).json({
             message: "You have successfully logged in!",
             user: {
@@ -86,7 +101,6 @@ exports.login = async (req, res) => {
                 lastname: existingUser.lastname,
                 email: existingUser.email,
                 role: existingUser.role,
-                token: token,
             },
         });
     } catch (error) {
@@ -96,4 +110,14 @@ exports.login = async (req, res) => {
             error: error.message,
         });
     }
+};
+
+// Logout route - clears the authentication cookie
+exports.logout = (req, res) => {
+    res.clearCookie('token', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production', // Only clear over HTTPS in production
+        sameSite: 'strict',
+    });
+    res.status(200).json({ message: 'Logged out successfully' });
 };

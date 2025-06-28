@@ -1,26 +1,20 @@
-
-//here we are using 'fs' module to write the code into a file
-const fs = require('fs');
-
-// require the path module to generate the file path
+// Use fs/promises for asynchronous file operations
+const fs = require('fs/promises');
+// Path module for file paths
 const path = require('path');
-
-//generate unique id for the file name
-const {v4 : uuidv4} = require('uuid'); //here we naming the v4 property to uuidv4 for readability
-
-//storing the location of new folder by appending the codes folder to the project root , codes is the new folder 
-const dirCodes = path.join(__dirname, 'codes');///Users/raghavbagdi/Documents/online-compiler/backend/codes
-
-if(!fs.existsSync(dirCodes)){
-    fs.mkdirSync(dirCodes,{recursive: true});
-}
-
-const generateFile = (language,code) => {
+// Generate unique IDs for filenames
+const {v4 : uuidv4} = require('uuid');
+// Directory to store code files
+const dirCodes = path.join(__dirname, 'codes');
+const generateFile = async (language,code) => {
     const jobId = uuidv4();
     const filename = `${jobId}.${language}`;   
-    const filePath = `./codes/${filename}`; // Return a clean relative path
-    fs.writeFileSync(filePath, code); //writing the code into the file , by using the filePath we just got and the code 
-    return filePath;  //returning the path of the file
+    const filePath = path.join(dirCodes, filename);
+
+    await fs.mkdir(dirCodes, { recursive: true }); // Ensure directory exists asynchronously
+    await fs.writeFile(filePath, code); // Write code to file asynchronously
+    return filePath;
+    
 };
 
 module.exports= generateFile;

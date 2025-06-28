@@ -2,13 +2,10 @@ const jwt = require('jsonwebtoken');
 
 // Middleware to authenticate any logged-in user based on JWT token
 const userAuth = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  const token = req.cookies.token; // Read token from cookies
+  if (!token) {
     return res.status(401).json({ message: "Missing or invalid token" });
   }
-
-  const token = authHeader.split(" ")[1];
-
   try {
     const decoded = jwt.verify(token, process.env.SECRET_KEY);
     req.user = decoded; // Attach decoded user info (id, email, role) to request
@@ -20,13 +17,10 @@ const userAuth = (req, res, next) => {
 
 // Middleware to authenticate admin users based on JWT token
 const adminAuth = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+  const token = req.cookies.token; // Read token from cookies
+  if (!token) {
     return res.status(401).json({ message: "Missing or invalid token" });
   }
-
-  const token = authHeader.split(" ")[1];
-
   try {
     const decoded = jwt.verify(token, process.env.SECRET_KEY);
     if (decoded.role !== "admin") {

@@ -1,30 +1,40 @@
-const user = require('../model/user');
+const User = require('../model/user');
+const Submission = require('../model/submission'); // Import the new model
 
-// Endpoint for compiler service to update solved problems
-exports.updateSolvedProblem = async (req, res) => {
-    try {
-        const { userId, problemNumber, verdict } = req.body;
+exports.updateVerdict = async (req, res) => {
+    const { problemNumber, verdict, code, language } = req.body; // Add code and language
+    const userId = req.user.id; // Get userId from authenticated token
 
-        // Security check: Ensure the user ID from the token matches the one sent in the body
-        if (req.user.id !== userId) {
-            return res.status(403).json({ message: 'Unauthorized: User ID mismatch' });
-        }
-
-        if (verdict === 'Accepted') {
-            const currentUser = await user.findById(userId);
-            if (!currentUser) {
-                return res.status(404).json({ message: 'User not found' });
-            }
-            // Add problemNumber to solvedProblems if not already present
-            if (!currentUser.solvedProblems.includes(problemNumber)) {
-                currentUser.solvedProblems.push(problemNumber);
-                await currentUser.save();
-            }
-            return res.status(200).json({ message: 'Problem marked as solved!' });
-        }
-        res.status(200).json({ message: 'Verdict received, no action taken for non-Accepted verdict.' });
-    } catch (error) {
-        console.error('Error processing solved problem update:', error);
-        res.status(500).json({ message: 'Failed to update solved problem status', error: error.message });
+    if (!problemNumber || !verdict || !code || !language) {
+        return res.status(400).json({ message: 'Problem number, verdict, code, and language are required.' });
     }
+
+    // Always create a submission record
+    try {
+        await Submission.create({
+            userId,
+            problemNumber,
+            verdict,
+            code,
+            language,
+        });
+    } catch (error) {
+        console.error('Error creating submission record:', error);
+        // We can still proceed to update the solved list even if this fails, but we should log it.
+    }
+
+    if (verdict === 'Accepted') {
+        try {
+            // Use $addToSet to add the problemNumber to the array only if it's not already present.
+            // This prevents duplicates and is more efficient than finding the user first.
+            await User.findByIdAndUpdate(userId, { $addToSet: { solvedProblems: problemNumber } });
+            return res.status(200).json({ message: 'User solved problems updated and submission recorded.' });
+        } catch (error) {
+            console.error('Error updating user solved problems:', error);
+            return res.status(500).json({ message: 'Internal server error while updating solved problems.' });
+        }
+    }
+
+    // If the verdict is not "Accepted", we just confirm the submission was recorded.
+    return res.status(200).json({ message: 'Submission recorded.' });
 };

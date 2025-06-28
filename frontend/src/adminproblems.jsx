@@ -34,8 +34,7 @@ const AdminProblemManager = () => {
   useEffect(() => {
     const checkAdmin = async () => {
       try {
-        const token = localStorage.getItem("token");
-        await checkAdminStatus(token);
+        await checkAdminStatus();
         setIsAdmin(true);
       } catch (err) {
         navigate("/");
@@ -99,7 +98,6 @@ const AdminProblemManager = () => {
 
   const createProblem = async () => {
     try {
-      const token = localStorage.getItem("token");
       const {
         title,
         description,
@@ -130,7 +128,6 @@ const AdminProblemManager = () => {
           tags,
           hiddenTestCases: hiddenTestCases || []
         },
-        token
       );
 
       setMessage(`Problem created successfully.`);
@@ -151,8 +148,7 @@ const AdminProblemManager = () => {
 
   const deleteProblem = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const res = await deleteProblemAPI(problemNumberToDelete, token);
+      const res = await deleteProblemAPI(problemNumberToDelete);
       setMessage(res.data.message);
       fetchProblems();
       setProblemNumberToDelete('');

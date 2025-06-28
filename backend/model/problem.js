@@ -29,7 +29,7 @@ const problemSchema = new mongoose.Schema(
       type: [
         {
           input: { type: String, required: true },
-          output: { type: String, required: true },
+          output: { type: String, default: '' }, // Removed required: true
         },
       ],
       default: [],

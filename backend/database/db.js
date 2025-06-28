@@ -1,16 +1,15 @@
 const mongoose = require ('mongoose');
-const dotenv = require ('dotenv');
-const path = require('path');
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const DBConnection = async ()=>{
     const MONGO_URI= process.env.MONGODB_URL;
     try{
-        await mongoose.connect(MONGO_URI);
-        console.log(" DB connection established");
+        const conn = await mongoose.connect(MONGO_URI);
+        console.log(`✅ DB connection established successfully: ${conn.connection.host}`);
+        return conn; // Return the connection object
     }
     catch(error){
-        console.log("Error while connecting to MongoDB", error);
+        console.error("❌ Error while connecting to MongoDB:", error.message);
+        process.exit(1); // Exit the process with a failure code if the database connection fails.
     }
 }
 
