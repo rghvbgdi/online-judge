@@ -27,9 +27,9 @@ exports.getLeaderboard = async (req, res) => {
           userId: '$_id', // Include the user's ID for a stable key in the frontend
           // The user schema has firstname and lastname. We'll construct a full name.
           username: { $concat: ['$firstname', ' ', '$lastname'] },
-          // Use $ifNull to handle cases where 'solvedProblems' might be null or missing,
+          // Use $ifNull to handle cases where 'solvedProblemDetails' might be null or missing,
           // preventing the $size operator from causing an error. It defaults to an empty array.
-          problemsSolved: { $size: { $ifNull: ['$solvedProblems', []] } },
+          problemsSolved: { $size: { $ifNull: ['$solvedProblemDetails', []] } },
           score: { $sum: '$solvedProblemDetails.difficulty' },
         },
       },

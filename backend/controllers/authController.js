@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const user = require('../model/user');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -120,4 +121,65 @@ exports.logout = (req, res) => {
         sameSite: 'strict',
     });
     res.status(200).json({ message: 'Logged out successfully' });
+};
+
+exports.forgotPassword = async (req, res) => {
+    const { email } = req.body;
+    if (!email) {
+        return res.status(400).json({ message: "Email is required." });
+    }
+
+    try {
+        const existingUser = await user.findOne({ email });
+        if (!existingUser) {
+            return res.status(404).json({ message: "User not found." });
+        }
+
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const resetTokenExpiry = Date.now() + 3600000; // 1 hour
+
+        existingUser.resetToken = resetToken;
+        existingUser.resetTokenExpiry = resetTokenExpiry;
+        await existingUser.save();
+
+        // TODO: Send this resetToken in a real email
+        res.status(200).json({ message: "Reset link sent to email.", token: resetToken });
+    } catch (error) {
+        console.error("Forgot password error:", error);
+        res.status(500).json({ message: "Something went wrong", error: error.message });
+    }
+};
+
+exports.resetPassword = async (req, res) => {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    if (!token || !password) {
+        return res.status(400).json({ message: "Token and new password are required." });
+    }
+
+    try {
+        const existingUser = await user.findOne({
+            resetToken: token,
+            resetTokenExpiry: { $gt: Date.now() }
+        });
+
+        if (!existingUser) {
+            return res.status(400).json({ message: "Invalid or expired token." });
+        }
+
+        if (!isStrongPassword(password)) {
+            return res.status(400).json({ message: "Password must be at least 6 characters long and include at least one uppercase letter and one number." });
+        }
+
+        existingUser.password = await bcrypt.hash(password, 10);
+        existingUser.resetToken = undefined;
+        existingUser.resetTokenExpiry = undefined;
+        await existingUser.save();
+
+        res.status(200).json({ message: "Password has been reset successfully." });
+    } catch (error) {
+        console.error("Reset password error:", error);
+        res.status(500).json({ message: "Something went wrong", error: error.message });
+    }
 };

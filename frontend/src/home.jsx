@@ -1,351 +1,400 @@
-import React, { useEffect, useState, useMemo } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { fetchAllProblems, fetchSolvedProblems } from "./apis/auth"; // Use the new lightweight fetcher
-
-// Moved outside the component to prevent re-creation on every render.
-const getDifficultyInfo = (d) => {
-  if (d < 1200) return { label: 'Easy', color: 'text-green-600', bgColor: 'bg-green-100' };
-  if (d < 1600) return { label: 'Medium', color: 'text-yellow-500', bgColor: 'bg-yellow-100' };
-  if (d < 2000) return { label: 'Hard', color: 'text-red-600', bgColor: 'bg-red-100' };
-  return { label: 'Expert', color: 'text-purple-600', bgColor: 'bg-purple-100' };
-};
-
-const formatDuration = (seconds) => {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  if (hours > 0) return `${hours}h ${minutes}m`;
-  return `${minutes}m`;
-};
-
-// Helper to get the next LeetCode contest dates
-const getNextLeetcodeContests = () => {
-  const now = new Date();
-  const day = now.getDay();
-  const hour = now.getHours();
-  const minute = now.getMinutes();
-
-  // Find next Sunday 8pm
-  let daysUntilSunday = (7 - day) % 7;
-  if (daysUntilSunday === 0 && (hour > 20 || (hour === 20 && minute > 0))) {
-    daysUntilSunday = 7;
-  }
-  const nextSunday = new Date(now);
-  nextSunday.setDate(now.getDate() + daysUntilSunday);
-  nextSunday.setHours(20, 0, 0, 0);
-
-  // Find next Saturday 8pm (only if this is an "alternate" week)
-  // We'll use the week number to determine if it's an alternate week
-  const getWeekNumber = (d) => {
-    d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-    const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
-    const weekNo = Math.ceil((((d - yearStart) / 86400000) + yearStart.getUTCDay()+1)/7);
-    return weekNo;
-  };
-  const weekNum = getWeekNumber(now);
-  let nextSaturday = null;
-  if (weekNum % 2 === 1) { // Odd weeks: show next Saturday
-    let daysUntilSaturday = (6 - day + 7) % 7;
-    if (daysUntilSaturday === 0 && (hour > 20 || (hour === 20 && minute > 0))) {
-      daysUntilSaturday = 7;
-    }
-    nextSaturday = new Date(now);
-    nextSaturday.setDate(now.getDate() + daysUntilSaturday);
-    nextSaturday.setHours(20, 0, 0, 0);
-  }
-  return [
-    { label: "Weekly Contest", date: nextSunday },
-    ...(nextSaturday ? [{ label: "Biweekly Contest", date: nextSaturday }] : [])
-  ];
-};
+import React, { useEffect, useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const Home = () => {
-  const [allProblems, setAllProblems] = useState([]); // Store the original, unfiltered list
-  const [loading, setLoading] = useState(true);
-  const [solvedProblems, setSolvedProblems] = useState(new Set()); // Use a Set for efficient lookups
-  const [problemOfTheDay, setProblemOfTheDay] = useState(null); // For the "Problem of the Day" feature
-  const [sortOrder, setSortOrder] = useState('none'); // 'asc', 'desc', 'none'
-  const [selectedTag, setSelectedTag] = useState('all'); // 'all' or a specific tag
-  const [searchTerm, setSearchTerm] = useState(''); // For the search input
-  const [leetcodeContests, setLeetcodeContests] = useState([]); // New state for LeetCode contests
-  const [codeforcesContests, setCodeforcesContests] = useState([]); // New state for Codeforces contests
-  const navigate = useNavigate(); // Hook for programmatic navigation
+  const navigate = useNavigate();
+  const [isLoggedIn, setIsLoggedIn] = useState(null);
+  const [typedText, setTypedText] = useState('');
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [isVisible, setIsVisible] = useState(false);
+  const heroRef = useRef(null);
+  const fullText = 'Master algorithms, get AI-driven insights, and track your progress.';
 
-  // Memoize the list of available tags to prevent re-computation on every render
-  const availableTags = useMemo(() => {
-    const tags = new Set();
-    allProblems.forEach(p => p.tags.forEach(tag => tags.add(tag)));
-    return ['all', ...Array.from(tags).sort()];
-  }, [allProblems]);
-
+  // Mouse tracking for interactive effects
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        // Fetch all problems
-        const problemsResponse = await fetchAllProblems();
-        const problemsData = problemsResponse.data;
-        setAllProblems(problemsData);
-        if (problemsData.length > 0) {
-          // Select a random problem as the "Problem of the Day"
-          setProblemOfTheDay(problemsData[Math.floor(Math.random() * problemsData.length)]);
-        }
-
-        // Try to fetch user's solved problems. This will fail if not logged in, which is fine.
-        try {
-          // Use the new, more efficient endpoint
-          const solvedResponse = await fetchSolvedProblems();
-          setSolvedProblems(new Set(solvedResponse.data)); // The response is now just an array of numbers
-        } catch (userError) {
-          // User is likely not logged in, so solvedProblems will remain an empty set.
-          console.log("Could not fetch user stats, assuming user is not logged in.");
-        }
-      } catch (error) {
-        console.error("Failed to fetch problems:", error);
-      } finally {
-        setLoading(false);
-      }
+    const handleMouseMove = (e) => {
+      setMousePosition({ x: e.clientX, y: e.clientY });
     };
-
-    fetchData();
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
+  // Intersection Observer for scroll animations
   useEffect(() => {
-    // Fetch LeetCode upcoming contests using GraphQL
-    const fetchLeetcodeContests = async () => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+        }
+      },
+      { threshold: 0.2 }
+    );
+
+    if (heroRef.current) {
+      observer.observe(heroRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  // Ensure page scrolls to top on mount
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => setIsVisible(true), 200);
+  }, []);
+
+  // Check login status
+  useEffect(() => {
+    const checkLoginStatus = async () => {
       try {
-        const query = `
-          query {
-            upcomingContests {
-              title
-              titleSlug
-              startTime
-              duration
-            }
+        await new Promise(resolve => setTimeout(resolve, 100));
+        setIsLoggedIn(true);
+      } catch (error) {
+        setIsLoggedIn(false);
+      }
+    };
+    checkLoginStatus();
+  }, []);
+
+  // Enhanced typewriter effect with pause at commas and backspace effect
+  useEffect(() => {
+    let index = 0;
+    const typingSpeed = 40;
+    const pauseAtComma = 400;
+    const startDelay = 600;
+
+    const startTyping = setTimeout(() => {
+      const timer = setInterval(() => {
+        if (index < fullText.length) {
+          setTypedText(fullText.slice(0, index + 1));
+          index++;
+          if (fullText[index] === ',') {
+            clearInterval(timer);
+            setTimeout(() => {
+              const nextTimer = setInterval(() => {
+                if (index < fullText.length) {
+                  setTypedText(fullText.slice(0, index + 1));
+                  index++;
+                } else {
+                  clearInterval(nextTimer);
+                }
+              }, typingSpeed);
+            }, pauseAtComma);
           }
-        `;
-        const response = await fetch('https://leetcode.com/graphql', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ query }),
-        });
-        const json = await response.json();
-        const upcoming = json.data.upcomingContests
-          .sort((a, b) => a.startTime - b.startTime)
-          .slice(0, 2);
-        setLeetcodeContests(upcoming);
-      } catch (error) {
-        console.error("Failed to fetch LeetCode contests:", error);
-      }
-    };
-
-    // Fetch Codeforces upcoming contests
-    const fetchCodeforcesContests = async () => {
-      try {
-        const response = await fetch('https://codeforces.com/api/contest.list');
-        const json = await response.json();
-        if (json.status === "OK" && json.result) {
-          const upcoming = json.result
-            .filter(c => c.phase === 'BEFORE')
-            .sort((a, b) => a.startTimeSeconds - b.startTimeSeconds)
-            .slice(0, 2);
-          setCodeforcesContests(upcoming);
+        } else {
+          clearInterval(timer);
         }
-      } catch (error) {
-        console.error("Failed to fetch Codeforces contests:", error);
-      }
-    };
+      }, typingSpeed);
+      return () => clearInterval(timer);
+    }, startDelay);
 
-    fetchLeetcodeContests();
-    fetchCodeforcesContests();
+    return () => clearTimeout(startTyping);
   }, []);
 
-  // Memoize the filtered and sorted problems to avoid re-calculating on every render
-  const displayedProblems = useMemo(() => {
-    let problems = [...allProblems];
-
-    // Apply search term filter
-    if (searchTerm) {
-      problems = problems.filter(p => p.title.toLowerCase().includes(searchTerm.toLowerCase()));
-    }
-
-    // Apply tag filter
-    if (selectedTag !== 'all') {
-      problems = problems.filter(p => p.tags.includes(selectedTag));
-    }
-
-    // Apply difficulty sort
-    if (sortOrder !== 'none') {
-      problems.sort((a, b) => {
-        return sortOrder === 'asc' ? a.difficulty - b.difficulty : b.difficulty - a.difficulty;
-      });
-    }
-
-    return problems;
-  }, [allProblems, sortOrder, selectedTag, searchTerm]);
-
-  const handleSortChange = () => {
-    // Cycle through sort states: none -> asc -> desc -> none
-    setSortOrder(prev => {
-      if (prev === 'none') return 'asc';
-      if (prev === 'asc') return 'desc';
-      return 'none';
-    });
+  // Dynamic gradient based on mouse position
+  const getMouseGradient = () => {
+    const x = (mousePosition.x / window.innerWidth) * 100;
+    const y = (mousePosition.y / window.innerHeight) * 100;
+    return {
+      background: `radial-gradient(600px circle at ${x}% ${y}%, rgba(16, 185, 129, 0.15), transparent 50%)`
+    };
   };
 
-  if (loading) return <p className="p-6 text-center">Loading problems...</p>;
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-sky-100 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-4xl sm:text-5xl font-bold mb-10 text-center text-slate-700">All Problems</h1>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black relative overflow-hidden">
+      {/* Interactive Mouse Gradient */}
+      <div 
+        className="absolute inset-0 pointer-events-none transition-all duration-600 ease-[cubic-bezier(0.4,0,0.2,1)] will-change-transform"
+        style={getMouseGradient()}
+      />
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Main Content: Filters and Problem List */}
-          <div className="lg:col-span-3 space-y-8">
-            {/* Filter and Sort Controls */}
-            <div className="grid grid-cols-3 gap-6 bg-white p-6 rounded-xl shadow-lg">
-              <input
-                type="text"
-                placeholder="Search by title..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="border border-gray-300 rounded-lg py-2 px-4 focus:outline-none focus:border-indigo-500"
-              />
-              <select
-                id="tag-filter"
-                value={selectedTag}
-                onChange={(e) => setSelectedTag(e.target.value)}
-                className="border border-gray-300 rounded-lg py-2 px-4 focus:outline-none focus:border-indigo-500"
-              >
-                {availableTags.map(tag => (
-                  <option key={tag} value={tag}>{tag === 'all' ? 'Filter by Tag' : tag}</option>
-                ))}
-              </select>
-              <button
-                onClick={handleSortChange}
-                className="w-full px-5 py-2 bg-blue-600 text-white rounded-lg shadow-sm hover:bg-blue-700 transition-colors"
-              >
-                Sort by Difficulty ({sortOrder === 'asc' ? '▲ Asc' : sortOrder === 'desc' ? '▼ Desc' : 'Default'})
-              </button>
-            </div>
-
-            {/* Problem Table */}
-            <div className="bg-white shadow-xl rounded-lg overflow-hidden">
-              <table className="w-full table-auto">
-                <thead>
-                  <tr className="bg-slate-200 text-slate-600 uppercase text-sm leading-normal">
-                    <th className="py-3 px-4 text-left w-12">Status</th>
-                    <th className="py-3 px-6 text-left">Title</th>
-                    <th className="py-3 px-6 text-left">Difficulty</th>
-                    <th className="py-3 px-6 text-left">Tags</th>
-                  </tr>
-                </thead>
-                <tbody className="text-slate-700 text-sm font-light">
-                  {displayedProblems.map(({ problemNumber, title, difficulty, tags }) => {
-                    const difficultyInfo = getDifficultyInfo(difficulty);
-                    const isSolved = solvedProblems.has(problemNumber);
-
-                    return (
-                      <tr key={problemNumber} className={`border-b border-slate-200 hover:bg-sky-50 transition-colors duration-200 group ${isSolved ? 'bg-green-50/50' : ''}`}>
-                        <td className="py-4 px-4 text-center">
-                          {isSolved && (
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
-                          )}
-                        </td>
-                        <td className="py-4 px-6">
-                          <Link to={`/home/${problemNumber}`} className="text-blue-600 group-hover:text-blue-700 hover:underline font-medium">
-                            {title}
-                          </Link>
-                        </td>
-                        <td className={`py-4 px-6 font-semibold ${difficultyInfo.color}`}>
-                          {difficulty}
-                        </td>
-                        <td className="py-4 px-6">
-                          <div className="flex flex-wrap gap-1">
-                            {tags?.map((tag, index) => (
-                              <span
-                                key={`${problemNumber}-${tag}-${index}`}
-                                className="px-2.5 py-1 text-xs bg-sky-100 text-sky-700 rounded-full font-medium group-hover:bg-sky-200 transition-colors duration-150"
-                              >
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Sidebar: Problem of the Day and Actions */}
-          <div className="lg:col-span-1 space-y-8">
-            {/* Problem of the Day Section */}
-            {problemOfTheDay && (
-              <div className="p-6 bg-white rounded-xl shadow-lg border-2 border-yellow-400">
-                <h2 className="text-xl font-bold text-slate-800 mb-2">🔥 Problem of the Day</h2>
-                <p className="text-slate-600 mb-4 leading-relaxed">A daily challenge to keep you sharp!</p>
-                <div className="flex justify-between items-center">
-                  <Link to={`/home/${problemOfTheDay.problemNumber}`} className="font-semibold text-blue-600 hover:underline">
-                    {problemOfTheDay.title}
-                  </Link>
-                  <span className={`px-3 py-1 rounded-full text-sm font-bold ${getDifficultyInfo(problemOfTheDay.difficulty).bgColor} ${getDifficultyInfo(problemOfTheDay.difficulty).color}`}>
-                    {problemOfTheDay.difficulty}
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {/* Upcoming Contests Card */}
-            <div className="p-6 bg-white rounded-xl shadow-lg border border-gray-200">
-              <h3 className="text-lg font-bold text-slate-800 mb-4">Upcoming Contests</h3>
-              <div className="space-y-4 text-sm text-slate-700">
-                <div>
-                  <h4 className="font-semibold text-slate-900 flex items-center gap-2 mb-2">
-                    <img src="https://leetcode.com/favicon.ico" alt="LeetCode" className="w-4 h-4" />
-                    LeetCode
-                  </h4>
-                  <ul className="space-y-2">
-                    {leetcodeContests.map((contest, idx) => (
-                      <li key={idx}>
-                        <span className="text-blue-600 font-medium">{contest.label}</span>
-                        <div className="text-xs text-slate-500">
-                          {contest.date.toLocaleString()} (8:00 PM IST)
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-slate-900 flex items-center gap-2 mb-2">
-                    <img src="https://sta.codeforces.com/s/12345/favicon.ico" alt="Codeforces" className="w-4 h-4" />
-                    Codeforces
-                  </h4>
-                  <ul className="space-y-2">
-                    {codeforcesContests.length === 0 && <li>No upcoming contests</li>}
-                    {codeforcesContests.map((contest) => (
-                      <li key={contest.id}>
-                        <a href={`https://codeforces.com/contest/${contest.id}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                          {contest.name}
-                        </a>
-                        <div className="text-xs text-slate-500">
-                          {new Date(contest.startTimeSeconds * 1000).toLocaleString()} ({formatDuration(contest.durationSeconds || 0)})
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* Animated Background Elements with Enhanced Parallax */}
+      <div className="absolute inset-0">
+        {/* Large Gradient Orbs with Smooth Parallax */}
+        <div 
+          className="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl animate-glow transform-gpu will-change-transform"
+          style={{ transform: `translate(${mousePosition.x * -0.04}px, ${mousePosition.y * -0.04}px)` }}
+        />
+        <div 
+          className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-glow delay-800 transform-gpu will-change-transform"
+          style={{ transform: `translate(${mousePosition.x * 0.04}px, ${mousePosition.y * 0.04}px)` }}
+        />
+        <div 
+          className="absolute top-3/4 left-1/3 w-64 h-64 bg-violet-500/10 rounded-full blur-2xl animate-glow delay-400 transform-gpu will-change-transform"
+          style={{ transform: `translate(${mousePosition.x * -0.03}px, ${mousePosition.y * -0.03}px)` }}
+        />
+        
+        {/* Animated Lines with Subtle Pulse */}
+        <div className="absolute top-0 left-1/4 w-px h-full bg-gradient-to-b from-transparent via-emerald-500/20 to-transparent animate-line-pulse will-change-transform" />
+        <div className="absolute top-0 right-1/3 w-px h-full bg-gradient-to-b from-transparent via-blue-500/20 to-transparent animate-line-pulse delay-600 will-change-transform" />
       </div>
+
+      {/* Main Content Container */}
+      <div className="relative z-10 min-h-screen flex flex-col">
+        
+        {/* Hero Section */}
+        <section ref={heroRef} className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-6xl mx-auto">
+            
+            {/* Main Headline with Enhanced Staggered Animation */}
+            <div className="mb-8">
+              <h1 className={`text-5xl sm:text-6xl lg:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-blue-400 to-emerald-400 mb-6 leading-tight transition-all duration-1200 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+                isVisible 
+                  ? 'opacity-100 translate-y-0 scale-100' 
+                  : 'opacity-0 translate-y-12 scale-95'
+              }`}>
+                {['C', 'o', 'd', 'e', 'A', 'l', 'l', 'y'].map((char, i) => (
+                  <span
+                    key={i}
+                    className="inline-block animate-spring"
+                    style={{ animationDelay: `${i * 0.1}s` }}
+                  >
+                    {char}
+                  </span>
+                ))}
+              </h1>
+              
+              <div className={`h-20 flex items-center justify-center transition-all duration-1200 delay-400 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+                isVisible 
+                  ? 'opacity-100 translate-y-0' 
+                  : 'opacity-0 translate-y-8'
+              }`}>
+                <p className="text-xl sm:text-2xl lg:text-3xl text-gray-200 font-light tracking-wide">
+                  {typedText}
+                  <span className="animate-pulse text-emerald-400 ml-2">|</span>
+                </p>
+              </div>
+            </div>
+
+            {/* Action Buttons with Enhanced Staggered Entrance */}
+            <div className={`flex flex-col items-center gap-6 mb-12 transition-all duration-1200 delay-600 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+              isVisible 
+                ? 'opacity-100 translate-y-0' 
+                : 'opacity-0 translate-y-12'
+            }`}>
+              {isLoggedIn === true && (
+                <div className="text-emerald-300 text-xl font-medium animate-spring">
+                  <span className="inline-block animate-wave mr-2">👋</span>Welcome back!
+                </div>
+              )}
+              
+              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                {isLoggedIn === null ? (
+                  // Enhanced Loading State
+                  <div className="flex gap-4">
+                    <div className="px-8 py-4 bg-gray-800/50 rounded-full animate-pulse border border-gray-700/50">
+                      <div className="w-20 h-6 bg-gradient-to-r from-gray-700 to-gray-600 rounded animate-shimmer"></div>
+                    </div>
+                    <div className="px-8 py-4 bg-gray-800/50 rounded-full animate-pulse border border-gray-700/50">
+                      <div className="w-32 h-6 bg-gradient-to-r from-gray-700 to-gray-600 rounded animate-shimmer"></div>
+                    </div>
+                  </div>
+                ) : isLoggedIn === false ? (
+                  // Enhanced Login Buttons
+                  <>
+                    <button
+                      onClick={() => navigate('/login')}
+                      className="group relative px-8 py-4 bg-gradient-to-r from-emerald-600 via-emerald-500 to-blue-600 text-white rounded-full font-semibold text-lg shadow-lg hover:shadow-emerald-600/50 hover:shadow-xl transform hover:scale-105 transition-all duration-600 ease-[cubic-bezier(0.4,0,0.2,1)] hover:from-emerald-500 hover:to-blue-500 overflow-hidden will-change-transform animate-pulse-subtle"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-blue-400 opacity-0 group-hover:opacity-40 transition-opacity duration-600 ease-[cubic-bezier(0.4,0,0.2,1)]"></div>
+                      <span className="relative flex items-center gap-2 group-hover:scale-103 transition-transform duration-400 ease-[cubic-bezier(0.4,0,0.2,1)]">
+                        Sign In
+                        <svg className="w-5 h-5 group-hover:translate-x-3 transition-transform duration-400 ease-[cubic-bezier(0.4,0,0.2,1)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
+                        </svg>
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => navigate('/register')}
+                      className="group relative px-8 py-4 border-2 border-emerald-400 text-emerald-300 rounded-full font-semibold text-lg hover:bg-emerald-400 hover:text-white transition-all duration-600 ease-[cubic-bezier(0.4,0,0.2,1)] transform hover:scale-105 overflow-hidden will-change-transform animate-pulse-subtle"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-blue-600 scale-x-0 group-hover:scale-x-100 transition-transform duration-800 ease-[cubic-bezier(0.4,0,0.2,1)] origin-left"></div>
+                      <span className="relative group-hover:scale-103 transition-transform duration-400 ease-[cubic-bezier(0.4,0,0.2,1)]">Get Started Free</span>
+                    </button>
+                  </>
+                ) : null}
+                
+                {/* Enhanced Start Coding Button */}
+                {isLoggedIn !== null && (
+                  <button
+                    onClick={() => navigate('/problems')}
+                    className="group relative px-8 py-4 bg-gradient-to-r from-emerald-600 via-blue-500 to-emerald-600 text-white rounded-full font-semibold text-lg shadow-lg hover:shadow-emerald-600/50 hover:shadow-xl transform hover:scale-105 transition-all duration-600 ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden will-change-transform animate-pulse-subtle"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-blue-400 opacity-0 group-hover:opacity-40 transition-opacity duration-600 ease-[cubic-bezier(0.4,0,0.2,1)]"></div>
+                    <div className="absolute inset-0 bg-white/20 scale-x-0 group-hover:scale-x-100 transition-transform duration-800 ease-[cubic-bezier(0.4,0,0.2,1)] origin-left"></div>
+                    <span className="relative flex items-center gap-2 group-hover:scale-103 transition-transform duration-400 ease-[cubic-bezier(0.4,0,0.2,1)]">
+                      Start Coding
+                      <svg className="w-5 h-5 group-hover:rotate-12 transition-transform duration-400 ease-[cubic-bezier(0.4,0,0.2,1)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                      </svg>
+                    </span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Enhanced Feature Cards */}
+            <div className={`grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto transition-all duration-1200 delay-900 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+              isVisible 
+                ? 'opacity-100 translate-y-0' 
+                : 'opacity-0 translate-y-16'
+            }`}>
+              
+              {/* Feature 1 - Enhanced */}
+              <div className="group relative bg-gray-800/60 backdrop-blur-xl border border-gray-700/60 rounded-2xl p-6 hover:bg-gray-800/80 transition-all duration-600 ease-[cubic-bezier(0.4,0,0.2,1)] hover:border-emerald-500/60 hover:shadow-xl hover:shadow-emerald-500/30 transform hover:scale-105 hover:-translate-y-3 overflow-hidden will-change-transform">
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-600/20 to-blue-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-600 ease-[cubic-bezier(0.4,0,0.2,1)]"></div>
+                <div className="relative z-10">
+                  <div className="bg-gradient-to-br from-emerald-500 to-blue-500 w-12 h-12 rounded-xl flex items-center justify-center mb-4 group-hover:scale-115 group-hover:rotate-8 transition-all duration-600 ease-[cubic-bezier(0.4,0,0.2,1)] shadow-lg group-hover:shadow-emerald-500/60">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-bold text-white mb-2 group-hover:text-emerald-200 transition-colors duration-400 ease-[cubic-bezier(0.4,0,0.2,1)]">Curated Problems</h3>
+                  <p className="text-gray-300 text-sm group-hover:text-gray-200 transition-colors duration-400 ease-[cubic-bezier(0.4,0,0.2,1)]">
+                    Practice with carefully selected coding challenges
+                  </p>
+                </div>
+              </div>
+
+              {/* Feature 2 - Enhanced */}
+              <div className="group relative bg-gray-800/60 backdrop-blur-xl border border-gray-700/60 rounded-2xl p-6 hover:bg-gray-800/80 transition-all duration-600 ease-[cubic-bezier(0.4,0,0.2,1)] hover:border-blue-500/60 hover:shadow-xl hover:shadow-blue-500/30 transform hover:scale-105 hover:-translate-y-3 overflow-hidden will-change-transform">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-emerald-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-600 ease-[cubic-bezier(0.4,0,0.2,1)]"></div>
+                <div className="relative z-10">
+                  <div className="bg-gradient-to-br from-blue-500 to-emerald-500 w-12 h-12 rounded-xl flex items-center justify-center mb-4 group-hover:scale-115 group-hover:rotate-8 transition-all duration-600 ease-[cubic-bezier(0.4,0,0.2,1)] shadow-lg group-hover:shadow-blue-500/60">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-bold text-white mb-2 group-hover:text-blue-200 transition-colors duration-400 ease-[cubic-bezier(0.4,0,0.2,1)]">AI Feedback</h3>
+                  <p className="text-gray-300 text-sm group-hover:text-gray-200 transition-colors duration-400 ease-[cubic-bezier(0.4,0,0.2,1)]">
+                    Get instant, intelligent code reviews and suggestions
+                  </p>
+                </div>
+              </div>
+
+              {/* Feature 3 - Enhanced */}
+              <div className="group relative bg-gray-800/60 backdrop-blur-xl border border-gray-700/60 rounded-2xl p-6 hover:bg-gray-800/80 transition-all duration-600 ease-[cubic-bezier(0.4,0,0.2,1)] hover:border-emerald-500/60 hover:shadow-xl hover:shadow-emerald-500/30 transform hover:scale-105 hover:-translate-y-3 overflow-hidden will-change-transform">
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-600/20 to-blue-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-600 ease-[cubic-bezier(0.4,0,0.2,1)]"></div>
+                <div className="relative z-10">
+                  <div className="bg-gradient-to-br from-emerald-500 to-blue-500 w-12 h-12 rounded-xl flex items-center justify-center mb-4 group-hover:scale-115 group-hover:rotate-8 transition-all duration-600 ease-[cubic-bezier(0.4,0,0.2,1)] shadow-lg group-hover:shadow-emerald-500/60">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-bold text-white mb-2 group-hover:text-emerald-200 transition-colors duration-400 ease-[cubic-bezier(0.4,0,0.2,1)]">Progress Tracking</h3>
+                  <p className="text-gray-300 text-sm group-hover:text-gray-200 transition-colors duration-400 ease-[cubic-bezier(0.4,0,0.2,1)]">
+                    Visualize your growth with detailed analytics
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Enhanced Footer with Fade-In */}
+        <footer className={`py-6 px-4 text-center border-t border-gray-700/50 bg-gray-900/60 backdrop-blur-xl transition-all duration-1200 delay-1100 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+          isVisible 
+            ? 'opacity-100 translate-y-0' 
+            : 'opacity-0 translate-y-8'
+        }`}>
+          <div className="max-w-6xl mx-auto">
+            <p className="text-gray-300 text-sm hover:text-white transition-colors duration-400 ease-[cubic-bezier(0.4,0,0.2,1)]">
+               CodeAlly Made with <span className="text-red-500 animate-pulse">❤️</span> for developers.
+            </p>
+          </div>
+        </footer>
+      </div>
+
+      {/* Custom Styles */}
+      <style jsx>{`
+        @keyframes spring {
+          0% {
+            transform: translateY(25px) scale(0.9);
+            opacity: 0;
+          }
+          60% {
+            transform: translateY(-6px) scale(1.06);
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(0) scale(1);
+            opacity: 1;
+          }
+        }
+
+        @keyframes glow {
+          0%, 100% {
+            opacity: 0.7;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 1;
+            transform: scale(1.05);
+          }
+        }
+
+        @keyframes line-pulse {
+          0%, 100% {
+            opacity: 0.5;
+            transform: translateY(0);
+          }
+          50% {
+            opacity: 1;
+            transform: translateY(-10px);
+          }
+        }
+
+        @keyframes wave {
+          0% { transform: rotate(0deg); }
+          10% { transform: rotate(12deg); }
+          20% { transform: rotate(-6deg); }
+          30% { transform: rotate(12deg); }
+          40% { transform: rotate(-3deg); }
+          50% { transform: rotate(8deg); }
+          60% { transform: rotate(0deg); }
+          100% { transform: rotate(0deg); }
+        }
+
+        @keyframes shimmer {
+          0% { background-position: -200px 0; }
+          100% { background-position: 200px 0; }
+        }
+
+        @keyframes pulse-subtle {
+          0%, 100% {
+            transform: scale(1);
+          }
+          50% {
+            transform: scale(1.02);
+          }
+        }
+
+        .animate-spring {
+          animation: spring 0.7s ease-[cubic-bezier(0.4,0,0.2,1)] forwards;
+        }
+
+        .animate-glow {
+          animation: glow 6s ease-in-out infinite;
+        }
+
+        .animate-line-pulse {
+          animation: line-pulse 4s ease-in-out infinite;
+        }
+
+        .animate-wave {
+          animation: wave 2s ease-in-out infinite;
+        }
+
+        .animate-shimmer {
+          background: linear-gradient(90deg, #475569 0%, #6b7280 50%, #475569 100%);
+          background-size: 200px 100%;
+          animation: shimmer 1.5s infinite;
+        }
+
+        .animate-pulse-subtle {
+          animation: pulse-subtle 3s ease-in-out infinite;
+        }
+      `}</style>
     </div>
   );
 };

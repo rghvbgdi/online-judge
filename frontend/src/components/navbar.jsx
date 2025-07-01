@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { fetchUserStats, logout as logoutAPI } from "../apis/auth";
-
+   
 const Navbar = () => {
     const navigate = useNavigate();
-    const location = useLocation(); // Get the current location to trigger re-checks on navigation
+    const location = useLocation(); // Get the current location to trigger re-checks on navigation 
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [isAdmin, setIsAdmin] = useState(false);
 
@@ -19,7 +19,7 @@ const Navbar = () => {
           // If the request fails (e.g., 401 Unauthorized), the user is not logged in.
           setIsLoggedIn(false);
           setIsAdmin(false);
-        }
+        }  
       };
 
       checkLoginAndAdminStatus();
@@ -37,78 +37,101 @@ const Navbar = () => {
             navigate("/login"); // Redirect to login page
         }
     };
-return (
-    <nav className="bg-slate-100 text-gray-700 shadow-sm p-4 flex items-center justify-between sticky top-0 z-50">
-      <div className="flex items-center gap-5"> {/* Slightly reduced gap */}
-        <button
-          onClick={() => navigate("/home")}
-          className="text-2xl font-semibold text-blue-600 hover:text-blue-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-300 rounded-md hover:-translate-y-0.5"
-        >
-          CodeX
-        </button> 
-        <Link
-          to="/home"
-          className={`font-medium hover:text-blue-600 transition-all duration-200 hover:-translate-y-0.5 block ${
-            location.pathname === "/home"
-              ? "underline underline-offset-4 decoration-2 decoration-blue-600"
-              : ""
-          }`}
-        >
-          Home
-        </Link>
-        <Link
-          to="/leaderboard"
-          className={`font-medium hover:text-blue-600 transition-all duration-200 hover:-translate-y-0.5 block ${
-            location.pathname === "/leaderboard"
-              ? "underline underline-offset-4 decoration-2 decoration-blue-600"
-              : ""
-          }`}
-        >
-          Leaderboard
-        </Link>
-        {isAdmin && (
-          <Link
-            to="/admin/problems"
-            className={`font-medium hover:text-blue-600 transition-all duration-200 hover:-translate-y-0.5 block ${
-              location.pathname === "/admin/problems"
-                ? "underline underline-offset-4 decoration-2 decoration-blue-600"
-                : ""
-            }`}
-          >
-            Manage Problems
-          </Link>
-        )}
-      </div>
-      <div className="flex items-center gap-3"> {/* Slightly reduced gap */}
-        {!isLoggedIn && (
-          <>
-            <Link to="/register" className="font-medium text-blue-600 hover:text-blue-700 transition-all duration-200 px-4 py-2 rounded-full hover:bg-blue-100 hover:shadow-md hover:-translate-y-0.5">
-              Register
-            </Link>
-            <Link to="/login" className="font-medium bg-blue-500 text-white hover:bg-blue-600 transition-all duration-200 px-4 py-2 rounded-full hover:shadow-md hover:-translate-y-0.5">
-              Login
-            </Link>
-          </>
-        )}
-        {isLoggedIn && (
-          <>
-            <Link
-              to="/profile"
-              className={`font-medium hover:text-blue-600 transition-all duration-200 hover:-translate-y-0.5 block ${
-                location.pathname === "/profile"
-                  ? "underline underline-offset-4 decoration-2 decoration-blue-600"
-                  : ""
-              }`}
-            >
-              Profile
-            </Link>
-            <button onClick={handleLogout} className="font-medium text-sm bg-rose-100 text-rose-600 hover:bg-rose-200 transition-all duration-200 px-4 py-2 rounded-full hover:shadow-md hover:-translate-y-0.5">
-              Logout
-            </button>
-          </>
-        )}
-      </div>
-    </nav>
-  );
+
+    return (
+        <nav className="bg-gray-900 text-gray-100 shadow-xl border-b border-gray-700 p-4 flex items-center justify-between sticky top-0 z-50 backdrop-blur-sm">
+            <div className="flex items-center gap-6">
+                <button
+                    onClick={() => navigate("/home")}
+                    className="text-2xl font-bold text-blue-400 hover:text-blue-300 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg px-2 py-1"
+                >
+                    CodeAlly
+                </button> 
+                <Link
+                    to="/home"
+                    className={`font-medium transition-all duration-200 px-3 py-2 ${
+                        location.pathname === "/home"
+                            ? "text-blue-400"
+                            : "text-gray-300 hover:text-blue-400"
+                    }`}
+                >
+                    Home
+                </Link>
+                <Link
+                    to="/problems"
+                    className={`font-medium transition-all duration-200 px-3 py-2 ${
+                        location.pathname === "/problems"
+                            ? "text-blue-400"
+                            : "text-gray-300 hover:text-blue-400"
+                    }`}
+                >
+                    Problems
+                </Link>
+                
+                <Link
+                    to="/onlinecompiler"
+                    className={`font-medium transition-all duration-200 px-3 py-2 ${
+                        location.pathname === "/onlinecompiler"
+                            ? "text-blue-400"
+                            : "text-gray-300 hover:text-blue-400"
+                    }`}
+                >
+                    Online Compiler
+                </Link>
+                <Link
+                    to="/leaderboard"
+                    className={`font-medium transition-all duration-200 px-3 py-2 ${
+                        location.pathname === "/leaderboard"
+                            ? "text-blue-400"
+                            : "text-gray-300 hover:text-blue-400"
+                    }`}
+                >
+                    Leaderboard
+                </Link>
+                {isAdmin && (
+                    <Link
+                        to="/admin/problems"
+                        className={`font-medium transition-all duration-200 px-3 py-2 ${
+                            location.pathname === "/admin/problems"
+                                ? "text-blue-400"
+                                : "text-gray-300 hover:text-blue-400"
+                        }`}
+                    >
+                        Manage Problems
+                    </Link>
+                )}
+            </div>
+            <div className="flex items-center gap-3">
+                {!isLoggedIn && (
+                    <>
+                        <Link to="/register" className="font-medium text-blue-400 hover:text-blue-300 transition-all duration-200 px-4 py-2 rounded-lg border border-gray-700 hover:border-blue-500">
+                            Register
+                        </Link>
+                        <Link to="/login" className="font-medium bg-blue-600 text-white hover:bg-blue-700 transition-all duration-200 px-4 py-2 rounded-lg shadow-lg">
+                            Login
+                        </Link>
+                    </>
+                )}
+                {isLoggedIn && (
+                    <>
+                        <Link
+                            to="/profile"
+                            className={`font-medium transition-all duration-200 px-3 py-2 ${
+                                location.pathname === "/profile"
+                                    ? "text-blue-400"
+                                    : "text-gray-300 hover:text-blue-400"
+                            }`}
+                        >
+                            Profile
+                        </Link>
+                        <button onClick={handleLogout} className="font-medium text-sm bg-red-600 text-white hover:bg-red-700 transition-all duration-200 px-4 py-2 rounded-lg shadow-lg">
+                            Logout
+                        </button>
+                    </>
+                )}
+            </div>
+        </nav>
+    );
 };
+
 export default Navbar;

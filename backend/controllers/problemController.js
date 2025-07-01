@@ -1,3 +1,4 @@
+const User = require('../model/user');
 const Problem = require('../model/problem');
 
 // Admin route to get a confirmation message and user info after admin auth
@@ -100,6 +101,14 @@ exports.deleteProblem = async (req, res) => {
         }
 
         const deleted = await Problem.findOneAndDelete({ problemNumber });
+
+        if (deleted) {
+            // Clean up user solvedProblems arrays that reference this problem
+            await User.updateMany(
+                { solvedProblems: problemNumber },
+                { $pull: { solvedProblems: problemNumber } }
+            );
+        }
 
         if (!deleted) {
             return res.status(404).json({ message: 'Problem not found' });

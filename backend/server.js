@@ -29,12 +29,14 @@ app.get("/",(req,res)=> {
   const userRoutes = require('./routes/userRoutes');
   const submissionRoutes = require('./routes/submissionRoutes');
   const leaderboardRoutes =require('./routes/leaderboardRoutes') ; // Import the new leaderboard routes
+  const geminiRoutes = require('./routes/geminiRoutes');
   // Use route modules
   app.use('/api/auth', authRoutes); // e.g., /api/auth/register, /api/auth/login
   app.use('/api/problems', problemRoutes); // e.g., /api/problems, /api/problems/:problemNumber, /api/problems/admin
   app.use('/api/user', userRoutes); // e.g., /api/user/solved-problems
   app.use('/api/submission', submissionRoutes); // e.g., /api/submission/verdict
   app.use('/api/leaderboard', leaderboardRoutes);
+  app.use('/api/gemini', geminiRoutes);
   // Start server and listen on configured port
   app.listen(process.env.PORT, () => {
       console.log(`server is listening on port ${process.env.PORT}!`);

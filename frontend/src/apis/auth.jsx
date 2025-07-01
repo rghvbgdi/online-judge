@@ -63,3 +63,13 @@ export const fetchLeaderboard = () => {
   // Example user object: { username: 'user1', problemsSolved: 10, score: 1500 }
   return API.get('/api/leaderboard');
 };
+
+export const getAIFeedback = (data) => {
+  return API.post('/api/gemini/feedback', data);
+};
+
+
+// Forgot password API call
+export const forgotPassword = (email) => {
+  return API.post('/api/auth/forgot-password', { email });
+};
