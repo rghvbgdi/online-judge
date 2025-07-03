@@ -1,0 +1,18 @@
+# Node modules (never copy these — they’re installed fresh inside the container)
+node_modules
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Environment files (optional, if you're injecting them via Docker)
+.env
+
+# OS + editor files
+.DS_Store
+.vscode
+
+# Git
+.git
+.gitignore

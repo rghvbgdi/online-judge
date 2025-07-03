@@ -2,7 +2,7 @@ const fs = require('fs/promises'); // File system promises API for async file op
 const generateFile = require('../generateFile.js'); // Utility to generate temporary code files
 const executeCpp = require('../executeCpp.js'); // Function to compile and execute C++ code
 const generateInputFile = require('../generateInputFile.js'); // Utility to generate temporary input files
-const Problem = require('../../../backend/model/problem.js'); // Mongoose model representing problem schema
+const axios = require('axios');
 
 // Route to run submitted code with optional custom input (for testing purposes)
 exports.runCode = async (req, res) => {
@@ -55,24 +55,33 @@ exports.submitCode = async (req, res) => {
   // Helper function to report the submission result to the main backend
   const reportVerdictToBackend = async (verdict) => {
     try {
-        const cookie = req.headers.cookie;
-        // We require axios here to avoid circular dependency issues if it were at the top level
-        const axios = require('axios');
-        await axios.post(`${process.env.MAIN_BACKEND_API_URL}/api/submission/verdict`, {
-            problemNumber: problemNumber,
-            verdict: verdict,
-            code: code,
-            language: language,
-        }, { headers: { 'Cookie': cookie } });
+      const cookie = req.headers.cookie;
+      // We require axios here to avoid circular dependency issues if it were at the top level
+      const axios = require('axios');
+      await axios.post(`${process.env.MAIN_BACKEND_API_URL}/api/submission/verdict`, {
+        problemNumber: problemNumber,
+        verdict: verdict,
+        code: code,
+        language: language,
+      }, { headers: { 'Cookie': cookie } });
     } catch (error) {
-        console.error('Error calling main backend to update verdict:', error.response?.data || error.message);
+      console.error('Error calling main backend to update verdict:', error.response?.data || error.message);
     }
   };
 
+  let problem;
   try {
-    const problem = await Problem.findOne({ problemNumber }); // Find the problem by its number
-    if (!problem) return res.status(404).json({ error: 'Problem not found' });
+    const cookie = req.headers.cookie;
+    const problemRes = await axios.get(`${process.env.MAIN_BACKEND_API_URL}/api/problems/${problemNumber}`, {
+      headers: { Cookie: cookie }
+    });
+    problem = problemRes.data;
+  } catch (error) {
+    console.error('Error fetching problem from main backend:', error.response?.data || error.message);
+    return res.status(404).json({ error: 'Problem not found' });
+  }
 
+  try {
     for (const [index, test] of problem.hiddenTestCases.entries()) { // Iterate through each hidden test case with its index
       const filePath = await generateFile(language, code);
       const inputFilePath = await generateInputFile(test.input);
@@ -106,12 +115,12 @@ exports.submitCode = async (req, res) => {
       } catch (err) {
         console.error("Error during executeCpp in /submit:", err);
         const errorVerdict = `❌ ${
-            err.type === 'compile'
-              ? 'Compile Error'
-              : err.type === 'timeout'
-              ? 'Time Limit Exceeded'
-              : 'Runtime Error'
-          }:\n${err.message}`;
+          err.type === 'compile'
+            ? 'Compile Error'
+            : err.type === 'timeout'
+            ? 'Time Limit Exceeded'
+            : 'Runtime Error'
+        }:\n${err.message}`;
         await reportVerdictToBackend(errorVerdict);
         return res.status(200).json({ // Keep 200 status for compiler-specific errors
           output: errorVerdict, // Format message like /runCode

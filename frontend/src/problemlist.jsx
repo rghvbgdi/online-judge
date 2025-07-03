@@ -87,9 +87,13 @@ const ProblemList = () => {
   const navigate = useNavigate();
 
   // Memoize the list of available tags
-  const availableTags = useMemo(() => {
+const availableTags = useMemo(() => {
     const tags = new Set();
-    allProblems.forEach(p => p.tags.forEach(tag => tags.add(tag)));
+    allProblems.forEach(p => {
+      if (Array.isArray(p.tags)) {
+        p.tags.forEach(tag => tags.add(tag));
+      }
+    });
     return ['all', ...Array.from(tags).sort()];
   }, [allProblems]);
 
@@ -153,7 +157,8 @@ const ProblemList = () => {
     }
 
     if (selectedTag !== 'all') {
-      problems = problems.filter(p => p.tags.includes(selectedTag));
+      // Ensure p.tags is an array before using includes to avoid runtime errors.
+      problems = problems.filter(p => Array.isArray(p.tags) && p.tags.includes(selectedTag));
     }
 
     if (sortOrder !== 'none') {
