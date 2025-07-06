@@ -1,11 +1,12 @@
 import axios from "axios";
 const API = axios.create({
-  baseURL: import.meta.env.VITE_COMPILER_URL ,
+  baseURL: import.meta.env.VITE_BACKEND_URL ,
     withCredentials: true // IMPORTANT: This tells axios to send cookies
 });
+
 // The compiler service is still at 8000
 const CompilerAPI = axios.create({
-  baseURL: import.meta.env.VITE_COMPILER_URL2 ,
+  baseURL: import.meta.env.VITE_BACKEND_URL2 ,
   withCredentials: true // IMPORTANT: This tells axios to send cookies
 });
 

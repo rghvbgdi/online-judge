@@ -11,7 +11,7 @@ const app = express();
 const compilerRoutes = require('./routes/compilerRoutes');
 
 app.use(cors({
-  origin: 'http://localhost:5173', // Allow requests from your frontend origin
+  origin: 'http://65.0.108.208:5173', // Allow requests from your frontend origin
   credentials: true, // Allow cookies to be sent and received
 }));
 app.use(cookieParser());

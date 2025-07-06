@@ -14,6 +14,8 @@ const getDifficultyCategory = (difficulty) => {
 
 // Get statistics for the logged-in user
 exports.getUserStats = async (req, res) => {
+    console.log("👉 Inside getUserStats. User:", req.user);
+
     try {
         // Calculate the date one year ago from today
         const oneYearAgo = new Date();

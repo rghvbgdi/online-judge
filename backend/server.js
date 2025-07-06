@@ -7,8 +7,8 @@ const cors = require('cors');
 
 
 app.use(cors({
-  origin: 'http://localhost:5173', // Allow requests from your frontend origin
-  credentials: true, // Allow cookies to be sent and received
+  origin: 'http://65.0.108.208:5173', // or wherever your frontend runs
+  credentials: true
 }));
 app.use(cookieParser());
 app.use(express.json());

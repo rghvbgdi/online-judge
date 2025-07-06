@@ -21,7 +21,9 @@ const Login = () => {
     try {
       await login(email, password);
       setSuccess("Welcome back!");
-      setTimeout(() => navigate("/home"), 1500);
+      setTimeout(() => {
+        navigate("/home");
+      }, 300); // Short delay ensures cookie is registered
     } catch (error) {
       setError(error.response?.data?.message || "Invalid credentials. Please try again.");
       setSuccess("");
