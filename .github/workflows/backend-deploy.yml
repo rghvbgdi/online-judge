@@ -1,0 +1,61 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+
+env:
+  AWS_REGION: ap-south-1
+  COMPILER_ECR_URI: 147853513308.dkr.ecr.ap-south-1.amazonaws.com/online-judge:latest
+
+jobs:
+  deploy-backend:
+    name: Deploy Backend APIs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # =========================
+      # Backend ZIP Lambda
+      # =========================
+      - name: Install Backend Dependencies
+        working-directory: backend
+        run: |
+          npm install --production
+
+      - name: Zip Backend Lambda
+        run: |
+          cd backend
+          zip -r ../backend-api.zip . -x "*.git*"
+
+      - name: Deploy Backend Lambda
+        run: |
+          aws lambda update-function-code \
+            --function-name OnlineJudgeBackendAPI \
+            --zip-file fileb://backend-api.zip
+
+      # =========================
+      # Compiler Lambda (ECR)
+      # =========================
+      - name: Deploy Compiler Lambda (Container Image)
+        run: |
+          aws lambda update-function-code \
+            --function-name OnlineJudgeCompilerAPI \
+            --image-uri ${COMPILER_ECR_URI}
