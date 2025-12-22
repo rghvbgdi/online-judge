@@ -6,7 +6,7 @@ on:
       - main
     paths:
       - 'backend/**'
-
+  workflow_dispatch:
 env:
   AWS_REGION: ap-south-1
   COMPILER_ECR_URI: 147853513308.dkr.ecr.ap-south-1.amazonaws.com/online-judge:latest
