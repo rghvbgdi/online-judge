@@ -54,3 +54,11 @@ jobs:
           aws cloudfront create-invalidation \
             --distribution-id ${CLOUDFRONT_DISTRIBUTION_ID} \
             --paths "/*"
+      
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-production-build
+          path: frontend/dist/
+          retention-days: 5
+      
