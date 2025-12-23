@@ -6,7 +6,7 @@ on:
       - main
     paths:
       - 'frontend/**'
-
+  workflow_dispatch:
 env:
   AWS_REGION: ap-south-1
   FRONTEND_S3_BUCKET: online-judge-frontend
