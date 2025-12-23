@@ -61,4 +61,10 @@ jobs:
           name: frontend-production-build
           path: frontend/dist/
           retention-days: 5
-      
+      - name: Trigger Azure Release
+        uses: Azure/pipelines@v1
+        with:
+          azure-devops-project-url: 'https://dev.azure.com/BeyondKeyTraining/AZ Training'
+          azure-pipeline-name: 'online-judge-frontend'
+          azure-devops-token: ${{ secrets.AZURE_DEVOPS_TOKEN }}
+         
