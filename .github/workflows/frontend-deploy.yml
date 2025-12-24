@@ -48,6 +48,6 @@ jobs:
       - name: Trigger Azure Release
         uses: Azure/pipelines@v1
         with:
-          azure-devops-project-url: 'https://dev.azure.com/BeyondKeyTraining/AZ Training'
+          azure-devops-project-url: 'https://dev.azure.com/raghavprojects/project-1'
           azure-pipeline-name: 'online-judge-frontend'
           azure-devops-token: ${{ secrets.AZURE_DEVOPS_TOKEN }}
